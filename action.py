@@ -20,6 +20,7 @@ def parse_event_spec(arg):
                 yield _keywords[key](value)
             else:
                 raise TypeError("key in arg dict is not a widget or keyword: {!r}".format(key))
+        return
     elif not isinstance(arg,(tuple,list,set)):
         arg = (arg,)
 
@@ -56,29 +57,29 @@ class EventHandler(abc.ABC):
         "by default this takes one argument and stores it as an attribute called .widget"
         self.widget = widget
 
-    def _setup(self,callable):
+    def setup(self,callable):
         if self._active:
             raise RuntimeError("EventHandler is already active!")
-        self.setup(callable)
+        self._setup(callable)
         self._active = True
 
-    def _cleanup(self):
+    def cleanup(self):
         if not self._active:
             raise RuntimeError("EventHandler is not active!")
-        self.cleanup()
+        self._cleanup()
         self._active = False
 
     @abc.abstractmethod
-    def setup(self, callable):
+    def _setup(self, callable):
         """take a callable and set up binding for it."""
         self.id = self.widget.bind("<<Sequence>>",callable,"+")
         
     @abc.abstractmethod
-    def cleanup(self):
+    def _cleanup(self):
         """called after the event triggered or the failsafe triggered,
 cleans up any bindings this handler holds"""
         try:
-            self.widget.unbind(self.id)
+            self.widget.unbind(self.seq, self.id)
         except tk.TclError: #maybe the widget was destroyed?
             pass
 
@@ -94,11 +95,11 @@ class GlobalListener(EventHandler):
         self.sequence = binding
         self.root = _get_default_root()
 
-    def setup(self,callable):
+    def _setup(self,callable):
         #XXX TO DO: add check that this will not override an existing global binding
         self.id = self.root.bind_all(self.sequence, callable)
 
-    def cleanup(self):
+    def _cleanup(self):
         try:
             self.root.unbind_all(self.id)
         except tk.TclError:
@@ -119,11 +120,11 @@ class Delay(EventHandler):
         else:
             self.widget = _get_default_root()
         
-    def setup(self,callable):
+    def _setup(self,callable):
         self.id = self.widget.after(self.wait_time, callable)
 
 
-    def cleanup(self):
+    def _cleanup(self):
         try:
             self.widget.after_cancel(self.id)
         except tk.TclError:
@@ -142,7 +143,7 @@ class ButtonListener(EventHandler):
             raise NotImplementedError("button listeners can only be created on buttons, not {0.__class__}".format(widget))
         self.widget = widget
         
-    def setup(self,callable):
+    def _setup(self,callable):
         self.old_command = self.widget.cget("command")
         self.final_callable = callable
         self.widget.configure(command = self.invoke)
@@ -151,7 +152,7 @@ class ButtonListener(EventHandler):
         self.widget.configure(command=self.old_command)
         return self.final_callable(self.widget.invoke())
 
-    def cleanup(self):
+    def _cleanup(self):
         self.widget.configure(command=self.old_command)
 
 
@@ -175,17 +176,17 @@ class Widget_Multibind_Handler(EventHandler):
                 raise ValueError("sequence does not look like a valid for binding: {!r}".format(item))
         self.sequences = sequence
 
-    def setup(self,callable):
-        self.ids = {self.widget.bind(seq, callable,"+") for seq in self.sequences}
+    def _setup(self,callable):
+        self.ids = {(seq, self.widget.bind(seq, callable,"+")) for seq in self.sequences}
         if self.invoke_handler:
             self.invoke_handler.setup(callable)
 
-    def cleanup(self):
-        try:
-            for id in self.ids:
-                self.widget.unbind(id)
-        except tk.TclError:
-            pass
+    def _cleanup(self):
+        for seq,bind_id in self.ids:
+            try:
+                self.widget.unbind(seq,bind_id)
+            except tk.TclError:
+                pass
         if self.invoke_handler:
             self.invoke_handler.cleanup()
 

@@ -18,6 +18,7 @@ However those farmiliar with procedural code will """
         
     @tk_routines.Routine
     def draw_blobs(self):
+        print("start")
         blobs = set()
         method_cycler = itertools.cycle((self.create_oval,self.create_rectangle))
         color_cycler = itertools.cycle(("turquoise","green","orange","violet","slate blue"))
@@ -28,8 +29,9 @@ However those farmiliar with procedural code will """
             for r in range(10,30,5):
                 try:
                     e = yield {self:"<Button-1>"}
-                except tk_coroutines.WidgetDestroyed:
+                except tk_routines.WidgetDestroyed:
                     return
+                print("1")
                 id = method(e.x-r, e.y-r, e.x+r, e.y+r, fill=color)
                 blobs.add(id)
 

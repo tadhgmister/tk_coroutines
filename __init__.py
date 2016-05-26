@@ -2,7 +2,6 @@
 import functools as _functools
 import tkinter as _tk
 
-
 class WidgetDestroyed(_tk.TclError):
     pass
 
@@ -11,9 +10,10 @@ from . import generator
 
 
 class Routine:
+    _meta_data_assigned = set(_functools.WRAPPER_ASSIGNMENTS) - {"__module__"}
     def __init__(self,func):
         self._func = func
-        _functools.update_wrapper(func, self)
+        self.__name__ = getattr(self._func, "__name__", "<NO NAME>")
     def __call__(*args,**kw):
         self,*args = args #allow self as keyword
         gen = self._func(*args,**kw)

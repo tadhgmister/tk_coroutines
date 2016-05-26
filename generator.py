@@ -58,18 +58,18 @@ class EventGenerator:
                                               suppress_StopIteration = True)
 
     def _cleanup(self):
-        #XXX is this check necessary?
+        #XX is this check necessary?
 ##        if self.__executing: 
 ##            raise RuntimeError("generator already running")
         self._clear_failsafe()
         for handler in self.__bindings:
-            handler._cleanup()
+            handler.cleanup()
         self.__bindings.clear()
 
     def _clear_failsafe(self):
         for widget,id in self.__failsafe.items():
             try:
-                widget.unbind(id)
+                widget.unbind("<Destroy>", id)
             except _tk.TclError:
                 pass
         self.__failsafe.clear()
@@ -77,7 +77,7 @@ class EventGenerator:
     def _handle_next_event_spec(self,spec):
         for action_listener in action.parse_event_spec(spec):
             self.__bindings.append(action_listener)
-            action_listener._setup(self.send_no_raise)
+            action_listener.setup(self.send_no_raise)
             w = action_listener.get_failsafe()
             if w not in self.__failsafe:
                 self.__failsafe[w] = w.bind("<Destroy>", self.failsafe_lost, "+")
