@@ -31,7 +31,6 @@ However those farmiliar with procedural code will """
                     e = yield {self:"<Button-1>"}
                 except tk_routines.WidgetDestroyed:
                     return
-                print("1")
                 id = method(e.x-r, e.y-r, e.x+r, e.y+r, fill=color)
                 blobs.add(id)
 

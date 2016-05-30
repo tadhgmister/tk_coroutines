@@ -1,3 +1,23 @@
+"""
+This is a library that aims to simplify the creation of coroutines in tkinter
+applications by decorating a generator function with the @Routine
+
+when the decorated generator is called it begins immidiately unlike normal generators
+when it yields control events are set up according to this specification in .actions.__doc__
+
+
+### error handling ###
+
+A fail-safe has been implemented that if / when all the widgets that can
+continue the generator have been destroyed, a WidgetDestroyed error will
+be thrown into the generator.
+WidgetDestroyed is a subclass of tkinter.TclError and the event of the
+last <Destroy> event will be available as an argument to the error
+
+
+
+"""
+
 
 import functools as _functools
 import tkinter as _tk
